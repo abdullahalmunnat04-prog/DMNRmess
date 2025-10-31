@@ -1,0 +1,829 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>DMNR — Mess Manager (Full)</title>
+
+<!-- jsPDF -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+<style>
+:root{
+  --bg:#071a2b; --card:#0f2740; --muted:#9fb3c8; --accent:#38bdf8; --accent-2:#60a5fa; --success:#10b981; --danger:#ef4444; --text:#e6eef6;
+  --glass: rgba(255,255,255,0.03);
+}
+*{box-sizing:border-box}
+body{margin:0;font-family:Inter,system-ui,Segoe UI,Roboto,Arial;background:linear-gradient(180deg,var(--bg),#021022);color:var(--text);min-height:100vh}
+.container{max-width:1200px;margin:20px auto;padding:18px}
+.header{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:14px}
+.brand{font-weight:900;font-size:72px;font-style:italic;letter-spacing:2px;margin:0;color:var(--accent)}
+.small{font-size:13px;color:var(--muted)}
+.card{background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));border-radius:12px;padding:14px;box-shadow:0 10px 30px rgba(2,8,20,0.6);margin-bottom:14px}
+.login-card{max-width:620px;margin:36px auto;padding:20px}
+.label{color:var(--muted);font-size:13px;margin-bottom:6px;display:block}
+.input, select, textarea {width:100%;padding:10px;border-radius:10px;background:transparent;border:1px solid var(--glass);color:var(--text);margin-bottom:8px}
+.btn{cursor:pointer;border:0;padding:8px 12px;border-radius:10px;font-weight:600}
+.btn-primary{background:var(--accent);color:#022;box-shadow:0 6px 18px rgba(56,189,248,0.06)}
+.btn-plain{background:transparent;color:var(--text);border:1px solid var(--glass)}
+.btn-success{background:#06b6d4;color:#022}
+.btn-danger{background:var(--danger);color:white}
+.tabs{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
+.tab{padding:8px 12px;border-radius:12px;background:transparent;border:1px solid transparent;cursor:pointer}
+.tab.active{background:rgba(255,255,255,0.02);border-color:rgba(255,255,255,0.04)}
+.summary{display:flex;gap:12px;align-items:center;padding:12px;border-radius:12px;flex-wrap:wrap}
+.tile{padding:8px 12px;border-radius:10px;background:transparent;min-width:140px}
+.table-wrap{overflow:auto;border-radius:10px}
+table{width:100%;border-collapse:collapse;font-size:14px}
+th,td{padding:8px;border:1px solid rgba(255,255,255,0.04);text-align:center;background:transparent}
+thead th{color:var(--muted);background:rgba(255,255,255,0.01)}
+.member-name{font-weight:700;text-align:left}
+.deposit-controls{display:flex;gap:8px;align-items:center;justify-content:center}
+.deposit-box{background:rgba(255,255,255,0.02);padding:6px 10px;border-radius:8px;display:inline-block;min-width:90px;text-align:center}
+.wide-input{width:100%;padding:8px;border-radius:8px;background:transparent;border:1px solid var(--glass);color:var(--text)}
+.cost-input{width:140px;padding:8px;border-radius:8px;background:transparent;border:1px solid var(--glass);color:var(--text)}
+.fee-input{width:100px;padding:6px;border-radius:8px;background:transparent;border:1px solid var(--glass);color:var(--text);text-align:right}
+.total-box{padding:6px;border-radius:8px;background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.06);font-weight:700}
+.stamp-btn{padding:6px 8px;border-radius:8px;background:#ef4444;color:white;border:0;cursor:pointer}
+.stamp-cell{display:flex;flex-direction:column;gap:6px;align-items:center}
+.export-input{display:flex;gap:8px}
+.paid-indicator{color:#ef4444;font-weight:800}
+.fee-checkboxes{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:8px}
+.fee-checkboxes label{display:flex;gap:6px;align-items:center;background:rgba(255,255,255,0.02);padding:6px 10px;border-radius:8px}
+.member-checkboxes{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:8px}
+.member-checkboxes label{display:flex;gap:6px;align-items:center;background:rgba(255,255,255,0.02);padding:6px 10px;border-radius:8px}
+.footer-note{font-size:12px;color:var(--muted);margin-top:8px}
+.small-center{text-align:center;color:var(--muted);font-size:13px}
+@media (max-width:1000px){ .brand{font-size:48px} table{font-size:13px} .fee-input{width:80px} .cost-input{width:100px} }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <!-- Login -->
+  <div id="loginCard" class="card login-card">
+    <div style="text-align:center">
+      <div class="brand">DMNR</div>
+      <div class="small">Mess Manager — Login</div>
+    </div>
+    <div style="margin-top:12px">
+      <label class="label">Role</label>
+      <select id="roleSelect" class="input"><option value="manager">Manager</option><option value="member">Member</option></select>
+      <label class="label">Password</label>
+      <input id="passwordInput" type="password" class="input" placeholder="Enter password" />
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-top:8px">
+        <div class="small">Choose role then enter password</div>
+        <button id="loginBtn" class="btn btn-primary">Login</button>
+      </div>
+      <div id="loginError" class="small" style="color:#ffb4b4;display:none;margin-top:8px"></div>
+    </div>
+  </div>
+
+  <!-- App -->
+  <div id="app" style="display:none">
+    <div class="header">
+      <div>
+        <div class="brand">DMNR</div>
+        <div class="small">BKASH / NAGAD: 01884166247</div>
+      </div>
+      <div style="display:flex;gap:8px;align-items:center">
+        <div id="signedAs" class="small"></div>
+        <button id="logoutBtn" class="btn btn-plain">Logout</button>
+      </div>
+    </div>
+
+    <div class="card summary">
+      <div class="tile"><div class="small">Total Deposit</div><div id="totalDeposit" style="font-weight:700">৳0</div></div>
+      <div class="tile"><div class="small">Total Meals</div><div id="totalMeals" style="font-weight:700">0</div></div>
+      <div class="tile"><div class="small">Total Expense</div><div id="totalExpense" style="font-weight:700">৳0.00</div></div>
+      <div class="tile"><div class="small">Meal Rate</div><div id="mealRate" style="font-weight:700">৳0.00</div></div>
+      <div class="tile"><div class="small">Remaining</div><div id="remaining" style="font-weight:700">৳0.00</div></div>
+      <div class="tile"><div class="small">Backup</div>
+        <div class="export-input" style="margin-top:6px">
+          <button id="exportBtn" class="btn btn-plain">Export JSON</button>
+          <input id="importFile" type="file" accept="application/json" style="display:none" />
+          <button id="importBtn" class="btn btn-plain">Import JSON</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="tabs card" id="tabs">
+      <div class="tab active" data-tab="deposit">Deposit</div>
+      <div class="tab" data-tab="meals">Meal Record</div>
+      <div class="tab" data-tab="fees">Fees &amp; Rent</div>
+      <div class="tab" data-tab="expense">Daily Expense</div>
+      <div class="tab" data-tab="archive">Archive</div>
+    </div>
+
+    <!-- Deposit -->
+    <section id="deposit" class="card section">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+        <strong>Deposit</strong>
+        <div style="display:flex;gap:8px">
+          <button id="downloadDeposit" class="btn btn-success">Download Section PDF</button>
+          <button id="archiveBtn" class="btn btn-plain">Archive This Month</button>
+        </div>
+      </div>
+      <div id="depositExport" class="table-wrap">
+        <table id="depositTable"><thead><tr><th>Member</th><th>Deposit (৳)</th><th>Member Meals</th><th>Meal Expense (৳)</th><th>Balance</th></tr></thead><tbody></tbody></table>
+      </div>
+    </section>
+
+    <!-- Meals -->
+    <section id="meals" class="card section" style="display:none">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+        <strong>Meal Record (31 days)</strong>
+        <div><button id="downloadMeals" class="btn btn-success">Download Section PDF</button></div>
+      </div>
+      <div id="mealsExport" class="table-wrap">
+        <table id="mealTable"><thead></thead><tbody></tbody><tfoot></tfoot></table>
+      </div>
+    </section>
+
+    <!-- Fees -->
+    <section id="fees" class="card section" style="display:none">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+        <strong>Fees &amp; Rent</strong>
+        <div style="display:flex;gap:8px;align-items:center">
+          <select id="feesMemberSelect" class="input" style="width:170px"></select>
+          <button id="downloadMemberFee" class="btn btn-success">Member PDF</button>
+          <button id="downloadFees" class="btn btn-plain">Download Section PDF</button>
+        </div>
+      </div>
+
+      <div id="feesExport" class="table-wrap">
+        <table id="feesTable"><thead></thead><tbody></tbody><tfoot></tfoot></table>
+      </div>
+
+      <!-- Stamp generator inside Fees section -->
+      <div class="card" style="margin-top:12px;padding:12px">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+          <strong>Generate Payment Stamp (single or multiple members)</strong>
+          <div style="display:flex;gap:8px;align-items:center">
+            <label class="small">Select Day:</label>
+            <select id="stampDaySelect" class="input" style="width:120px"></select>
+          </div>
+        </div>
+
+        <div class="small" style="margin-bottom:8px">Select member(s):</div>
+        <div class="member-checkboxes" id="memberCheckboxes"></div>
+
+        <div class="small" style="margin-top:8px;margin-bottom:8px">Select fee type(s):</div>
+        <div class="fee-checkboxes" id="feeCheckboxes"></div>
+
+        <div style="display:flex;gap:8px;margin-top:12px">
+          <button id="generateStampPDF" class="btn btn-success">Generate Stamp PDF (combined)</button>
+          <button id="downloadAllSelected" class="btn btn-plain">Download All Selected Stamps (per fee)</button>
+        </div>
+        <div class="footer-note">PDF will show “Issued on: [day month year]” and “Signed by Rabbi — DMNR Manager”.</div>
+      </div>
+
+    </section>
+
+    <!-- Expense -->
+    <section id="expense" class="card section" style="display:none">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+        <strong>Daily Expense (31 days)</strong>
+        <div><button id="downloadExpense" class="btn btn-success">Download Section PDF</button></div>
+      </div>
+      <div id="expenseExport" class="table-wrap">
+        <table id="expenseTable"><thead><tr><th>Day</th><th style="width:65%">Item</th><th>Cost (৳)</th><th>Action</th></tr></thead><tbody></tbody><tfoot><tr><td colspan="2" class="right small">Total</td><td id="expenseTotal" class="right">৳0.00</td><td></td></tr></tfoot></table>
+      </div>
+    </section>
+
+    <!-- Archive -->
+    <section id="archive" class="card section" style="display:none">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+        <strong>Archive</strong>
+        <div style="display:flex;gap:8px">
+          <button id="downloadArchive" class="btn btn-success">Download Latest Archive PDF</button>
+          <button id="clearArchives" class="btn btn-plain">Clear Archives</button>
+        </div>
+      </div>
+      <div id="archiveList"></div>
+    </section>
+
+  </div>
+</div>
+
+<script>
+/* DMNR Full — includes Previous Fee and stamp system (members + fees) */
+const { jsPDF } = window.jspdf;
+const MEMBERS = ["Nayon","Munnat","Ramim","Dip","Rakib","Rabbi","Rajib"];
+const FEE_TYPES = ["Rent","Gas","Current","Internet","Meal Fee","Extra","Previous Fee"];
+const STORAGE_KEY = 'dmnr_manager_full_v1';
+
+let state = null;
+let role = null;
+
+function defaultState(){
+  const deposits = Object.fromEntries(MEMBERS.map(m=>[m,2000]));
+  const mealRecord = {};
+  const fees = {};
+  for(const m of MEMBERS){
+    mealRecord[m] = Object.fromEntries(Array.from({length:31},(_,i)=>[String(i+1),0]));
+    fees[m] = Object.fromEntries(FEE_TYPES.map(ft=>[ft,0]));
+  }
+  const expenses = Array.from({length:31},(_,i)=>({day:i+1,note:'',cost:0}));
+  const payments = {};
+  for(const m of MEMBERS){ payments[m] = {}; for(const ft of FEE_TYPES) payments[m][ft] = {paid:false, date:null}; }
+  const passwords = { manager: 'manager123', member: 'dmnr' };
+  return { deposits, mealRecord, fees, expenses, payments, archive: {}, passwords };
+}
+
+function loadState(){
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if(!raw){ state = defaultState(); saveState(); return; }
+    state = Object.assign(defaultState(), JSON.parse(raw));
+    if(!state.payments){ state.payments = {}; for(const m of MEMBERS){ state.payments[m] = {}; for(const ft of FEE_TYPES) state.payments[m][ft] = {paid:false,date:null}; } }
+  } catch(e){ state = defaultState(); saveState(); }
+}
+function saveState(){ localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }
+
+// UI refs
+const loginCard = document.getElementById('loginCard');
+const roleSelect = document.getElementById('roleSelect');
+const passwordInput = document.getElementById('passwordInput');
+const loginBtn = document.getElementById('loginBtn');
+const loginError = document.getElementById('loginError');
+const app = document.getElementById('app');
+const signedAs = document.getElementById('signedAs');
+
+const tabs = document.querySelectorAll('.tab');
+const sections = document.querySelectorAll('.section');
+
+const depositTbody = document.querySelector('#depositTable tbody');
+const mealThead = document.querySelector('#mealTable thead');
+const mealTbody = document.querySelector('#mealTable tbody');
+const mealTfoot = document.querySelector('#mealTable tfoot');
+
+const feesTable = document.getElementById('feesTable');
+const feesMemberSelect = document.getElementById('feesMemberSelect');
+const downloadMemberFee = document.getElementById('downloadMemberFee');
+
+const expenseTbody = document.querySelector('#expenseTable tbody');
+
+const feeCheckboxes = document.getElementById('feeCheckboxes');
+const memberCheckboxes = document.getElementById('memberCheckboxes');
+const stampDaySelect = document.getElementById('stampDaySelect');
+const generateStampPDF = document.getElementById('generateStampPDF');
+const downloadAllSelected = document.getElementById('downloadAllSelected');
+
+const downloadDeposit = document.getElementById('downloadDeposit');
+const downloadMeals = document.getElementById('downloadMeals');
+const downloadFees = document.getElementById('downloadFees');
+const downloadExpense = document.getElementById('downloadExpense');
+const archiveBtn = document.getElementById('archiveBtn');
+const downloadArchive = document.getElementById('downloadArchive');
+const exportBtn = document.getElementById('exportBtn');
+const importBtn = document.getElementById('importBtn');
+const importFile = document.getElementById('importFile');
+const clearArchives = document.getElementById('clearArchives');
+
+loadState();
+renderLoginDefaults();
+attachEvents();
+renderAll();
+
+function renderLoginDefaults(){ roleSelect.value='manager'; passwordInput.value=''; }
+
+function attachEvents(){
+  loginBtn.addEventListener('click', doLogin);
+  document.getElementById('logoutBtn').addEventListener('click', ()=>{ role=null; app.style.display='none'; loginCard.style.display=''; passwordInput.value=''; });
+  tabs.forEach(t=> t.addEventListener('click', ()=> {
+    tabs.forEach(x=> x.classList.remove('active')); t.classList.add('active');
+    const tab = t.getAttribute('data-tab');
+    sections.forEach(s=> s.style.display = (s.id === tab ? '' : 'none'));
+    if(tab === 'meals') renderMealTable();
+  }));
+  downloadDeposit.addEventListener('click', ()=> downloadDepositPDF());
+  downloadMeals.addEventListener('click', ()=> downloadMealsPDF());
+  downloadFees && downloadFees.addEventListener('click', ()=> downloadFeesSectionPDF());
+  downloadExpense.addEventListener('click', ()=> downloadExpensePDF());
+  downloadMemberFee.addEventListener('click', ()=> { const m = feesMemberSelect.value; downloadMemberPDF(m); });
+  generateStampPDF.addEventListener('click', ()=> generateCombinedStampPDF());
+  downloadAllSelected.addEventListener('click', ()=> downloadSelectedAsSeparate());
+  archiveBtn.addEventListener('click', doArchive);
+  downloadArchive.addEventListener('click', ()=> alert('Archive PDF: coming soon'));
+  clearArchives.addEventListener('click', ()=> { if(confirm('Clear all archives?')){ state.archive = {}; saveState(); renderAll(); } });
+  exportBtn && exportBtn.addEventListener('click', ()=> {
+    const data = JSON.stringify(state);
+    const blob = new Blob([data], {type:'application/json'});
+    const now = new Date();
+    const fname = 'DMNR_' + now.toLocaleString('default', {month:'long', year:'numeric'}).replace(' ','_') + '.json';
+    const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = fname; document.body.appendChild(a); a.click(); a.remove();
+  });
+  importBtn && importBtn.addEventListener('click', ()=> importFile.click());
+  importFile && importFile.addEventListener('change', (e)=> {
+    const f = e.target.files[0]; if(!f) return;
+    const reader = new FileReader(); reader.onload = ()=> {
+      try {
+        const parsed = JSON.parse(reader.result);
+        if(confirm('Importing will overwrite current data. Continue?')){ state = Object.assign(defaultState(), parsed); saveState(); renderAll(); alert('Imported'); }
+      } catch(err){ alert('Invalid file'); }
+    }; reader.readAsText(f);
+  });
+}
+
+function doLogin(){
+  const r = roleSelect.value; const p = passwordInput.value.trim();
+  if(r === 'manager' && p === state.passwords.manager){ role='manager'; afterLogin(); }
+  else if(r === 'member' && p === state.passwords.member){ role='member'; afterLogin(); }
+  else { loginError.style.display='block'; loginError.textContent='Invalid password for selected role'; }
+}
+function afterLogin(){
+  loginCard.style.display='none'; app.style.display=''; signedAs.textContent = role==='manager' ? 'Signed in as Manager (editable)' : 'Signed in as Member (read-only)';
+  renderAll();
+}
+
+function totalDeposit(){ return MEMBERS.reduce((a,m)=> a + Number(state.deposits[m]||0), 0); }
+function totalMeals(){ return MEMBERS.reduce((a,m)=> a + Object.values(state.mealRecord[m]||{}).reduce((s,v)=> s + Number(v||0),0), 0); }
+function totalExpenses(){ return state.expenses.reduce((a,e)=> a + Number(e.cost||0), 0); }
+function mealRate(){ const tm = totalMeals(); return tm>0 ? totalExpenses()/tm : 0; }
+
+function renderAll(){ ensureShape(); renderSummary(); renderDeposit(); renderMealTable(); renderFees(); renderExpenses(); renderFeeCheckboxes(); renderMemberCheckboxes(); populateFeesMemberSelect(); populateStampDaySelect(); saveState(); }
+
+function renderSummary(){
+  document.getElementById('totalDeposit').textContent = '৳' + totalDeposit();
+  document.getElementById('totalMeals').textContent = totalMeals();
+  document.getElementById('totalExpense').textContent = '৳' + totalExpenses().toFixed(2);
+  document.getElementById('mealRate').textContent = '৳' + mealRate().toFixed(2);
+  document.getElementById('remaining').textContent = '৳' + (totalDeposit() - totalExpenses()).toFixed(2);
+}
+
+function renderDeposit(){
+  depositTbody.innerHTML = '';
+  const rate = mealRate();
+  for(const m of MEMBERS){
+    const tr = document.createElement('tr');
+    const tdName = document.createElement('td'); tdName.className='member-name'; tdName.textContent = m;
+    const tdDep = document.createElement('td');
+    const dep = Number(state.deposits[m]||0);
+    if(role === 'manager'){
+      const controls = document.createElement('div'); controls.className='deposit-controls';
+      const minus = document.createElement('button'); minus.className='btn btn-danger'; minus.textContent='-100';
+      minus.onclick = ()=> { state.deposits[m] = Math.max(0, Number(state.deposits[m]||0) - 100); saveState(); renderAll(); };
+      const plus = document.createElement('button'); plus.className='btn btn-success'; plus.textContent='+100';
+      plus.onclick = ()=> { state.deposits[m] = Number(state.deposits[m]||0) + 100; saveState(); renderAll(); };
+      const box = document.createElement('div'); box.className='deposit-box'; box.textContent = dep;
+      const edit = document.createElement('button'); edit.className='btn btn-plain'; edit.textContent='Edit';
+      edit.onclick = ()=> { const v = prompt('Set deposit for ' + m, String(dep)); if(v!==null){ state.deposits[m] = Number(v||0); saveState(); renderAll(); } };
+      controls.append(minus, plus, box, edit);
+      tdDep.appendChild(controls);
+    } else tdDep.textContent = dep;
+
+    const meals = Object.values(state.mealRecord[m]||{}).reduce((s,v)=> s + Number(v||0), 0);
+    const tdMeals = document.createElement('td'); tdMeals.textContent = meals;
+    const tdExpense = document.createElement('td'); tdExpense.textContent = (meals * rate).toFixed(2);
+    const tdBal = document.createElement('td');
+    const bal = dep - (meals * rate);
+    tdBal.innerHTML = bal.toFixed(2) + ' ' + (bal < 0 ? `<span class="status-negative">Have to give</span>` : `<span class="status-positive">You will get</span>`);
+    tr.append(tdName, tdDep, tdMeals, tdExpense, tdBal);
+    depositTbody.appendChild(tr);
+  }
+}
+
+function renderMealTable(){
+  mealThead.innerHTML = ''; mealTbody.innerHTML=''; mealTfoot.innerHTML='';
+  const headRow = document.createElement('tr');
+  headRow.innerHTML = '<th>Member</th>' + Array.from({length:31},(_,i)=>'<th>'+(i+1)+'</th>').join('') + '<th>Total</th>';
+  mealThead.appendChild(headRow);
+  for(const m of MEMBERS){
+    const tr = document.createElement('tr');
+    const tdName = document.createElement('td'); tdName.className='member-name'; tdName.textContent = m; tr.appendChild(tdName);
+    let sum = 0;
+    for(let d=1; d<=31; d++){
+      const td = document.createElement('td');
+      const val = Number((state.mealRecord[m] && state.mealRecord[m][String(d)])||0);
+      sum += val;
+      if(role === 'manager'){
+        const inp = document.createElement('input'); inp.type='number'; inp.step='0.5'; inp.value = val; inp.style.width='64px';
+        inp.onchange = ()=> { state.mealRecord[m][String(d)] = Number(inp.value||0); saveState(); renderAll(); };
+        td.appendChild(inp);
+      } else td.textContent = val;
+      tr.appendChild(td);
+    }
+    const tdTotal = document.createElement('td'); tdTotal.textContent = sum; tr.appendChild(tdTotal);
+    mealTbody.appendChild(tr);
+  }
+  const foot = document.createElement('tr');
+  foot.innerHTML = '<td class="small">Day Totals</td>' + Array.from({length:31},(_,i)=>{ const d=i+1; const tot = MEMBERS.reduce((s,m)=> s + Number((state.mealRecord[m]&&state.mealRecord[m][String(d)])||0),0); return '<td>'+tot+'</td>'; }).join('') + '<td><strong>'+ totalMeals() +'</strong></td>';
+  mealTfoot.appendChild(foot);
+}
+
+function renderFees(){
+  const feesTableEl = document.getElementById('feesTable');
+  feesTableEl.innerHTML = '';
+  const thead = document.createElement('thead');
+  thead.innerHTML = '<tr><th>Fee Type</th>' + MEMBERS.map(m=>'<th>'+m+'</th>').join('') + '<th>Row Total</th></tr>';
+  feesTableEl.appendChild(thead);
+  const tbody = document.createElement('tbody');
+  for(const ft of FEE_TYPES){
+    const tr = document.createElement('tr');
+    const tdName = document.createElement('td'); tdName.textContent = ft; tr.appendChild(tdName);
+    let rowSum = 0;
+    for(const m of MEMBERS){
+      const td = document.createElement('td');
+      const val = Number((state.fees[m] && state.fees[m][ft])||0);
+      rowSum += val;
+      if(role === 'manager'){
+        const inp = document.createElement('input'); inp.type='number'; inp.value = val; inp.className='fee-input';
+        inp.onchange = ()=> { state.fees[m][ft] = Number(inp.value||0); saveState(); renderAll(); };
+        td.appendChild(inp);
+      } else {
+        const box = document.createElement('div'); box.className='total-box'; box.textContent = val.toFixed(2); td.appendChild(box);
+      }
+      tr.appendChild(td);
+    }
+    const tdTotal = document.createElement('td'); tdTotal.className='total-box'; tdTotal.textContent = rowSum.toFixed(2); tr.appendChild(tdTotal);
+    tbody.appendChild(tr);
+  }
+  feesTableEl.appendChild(tbody);
+  const foot = document.createElement('tfoot');
+  let footHtml = '<tr><td><strong>Column Totals</strong></td>';
+  let grand = 0;
+  for(const m of MEMBERS){
+    const colSum = FEE_TYPES.reduce((s,ft)=> s + Number((state.fees[m] && state.fees[m][ft])||0), 0);
+    grand += colSum;
+    footHtml += '<td class="total-box">'+colSum.toFixed(2)+'</td>';
+  }
+  footHtml += '<td class="total-box"><strong>'+grand.toFixed(2)+'</strong></td></tr>';
+  foot.innerHTML = footHtml;
+  feesTableEl.appendChild(foot);
+}
+
+function renderExpenses(){
+  const expenseTbodyEl = document.querySelector('#expenseTable tbody');
+  expenseTbodyEl.innerHTML = '';
+  for(let i=0;i<31;i++){
+    if(!state.expenses[i]) state.expenses[i] = {day:i+1,note:'',cost:0};
+    const e = state.expenses[i];
+    const tr = document.createElement('tr');
+    const tdDay = document.createElement('td'); tdDay.textContent = e.day;
+    const tdNote = document.createElement('td');
+    if(role === 'manager'){
+      const inp = document.createElement('input'); inp.type='text'; inp.className='wide-input'; inp.value = e.note || '';
+      inp.onchange = ()=> { state.expenses[i].note = inp.value; saveState(); };
+      tdNote.appendChild(inp);
+    } else tdNote.textContent = e.note || '';
+    const tdCost = document.createElement('td'); tdCost.style.textAlign='right';
+    if(role === 'manager'){
+      const inpC = document.createElement('input'); inpC.type='number'; inpC.className='cost-input'; inpC.value = Number(e.cost||0);
+      inpC.onchange = ()=> { state.expenses[i].cost = Number(inpC.value||0); saveState(); renderAll(); };
+      tdCost.appendChild(inpC);
+    } else tdCost.textContent = Number(e.cost||0).toFixed(2);
+    const tdAction = document.createElement('td');
+    if(role === 'manager'){
+      const clr = document.createElement('button'); clr.className='btn btn-plain'; clr.textContent='Clear';
+      clr.onclick = ()=> { state.expenses[i] = {day:i+1,note:'',cost:0}; saveState(); renderAll(); };
+      tdAction.appendChild(clr);
+    }
+    tr.append(tdDay, tdNote, tdCost, tdAction);
+    expenseTbodyEl.appendChild(tr);
+  }
+  document.getElementById('expenseTotal').textContent = '৳' + totalExpenses().toFixed(2);
+}
+
+// fee & member checkboxes renderers
+function renderFeeCheckboxes(){
+  feeCheckboxes.innerHTML = '';
+  for(const ft of FEE_TYPES){
+    const id = 'fee_cb_' + ft.replace(/\s+/g,'_');
+    const label = document.createElement('label');
+    label.innerHTML = `<input type="checkbox" id="${id}" value="${ft}" /> <span>${ft}</span>`;
+    feeCheckboxes.appendChild(label);
+  }
+}
+
+function renderMemberCheckboxes(){
+  memberCheckboxes.innerHTML = '';
+  for(const m of MEMBERS){
+    const id = 'mem_cb_' + m.replace(/\s+/g,'_');
+    const label = document.createElement('label');
+    label.innerHTML = `<input type="checkbox" id="${id}" value="${m}" /> <span>${m}</span>`;
+    memberCheckboxes.appendChild(label);
+  }
+}
+
+function populateFeesMemberSelect(){ feesMemberSelect.innerHTML = MEMBERS.map(m=>'<option value="'+m+'">'+m+'</option>').join(''); }
+
+function populateStampDaySelect(){
+  stampDaySelect.innerHTML = Array.from({length:31},(_,i)=>'<option value="'+(i+1)+'">'+(i+1)+'</option>').join('');
+  stampDaySelect.value = String(new Date().getDate());
+}
+
+// PDF generators
+
+function downloadDepositPDF(){
+  const rate = mealRate();
+  const now = new Date();
+  const monthYear = now.toLocaleString('default', {month:'long', year:'numeric'});
+  const doc = new jsPDF({unit:'pt', format:'a4'});
+  doc.setFontSize(36); doc.text('DMNR', 40, 60);
+  doc.setFontSize(12); doc.text('Deposit Report', 40, 84);
+  doc.line(40,92,555,92);
+  let y = 120;
+  doc.setFontSize(10);
+  doc.text('Member', 50, y); doc.text('Deposit',220,y); doc.text('Meals',320,y); doc.text('Meal Expense',400,y); doc.text('Balance',500,y);
+  y+=16;
+  let totalDep=0, totalMealsVal=0, totalExpense=0;
+  for(const m of MEMBERS){
+    const dep = Number(state.deposits[m]||0);
+    const meals = Object.values(state.mealRecord[m]||{}).reduce((s,v)=> s + Number(v||0),0);
+    const exp = meals * rate;
+    const bal = dep - exp;
+    doc.text(m,50,y); doc.text(dep.toFixed(2),220,y); doc.text(meals.toString(),320,y); doc.text(exp.toFixed(2),400,y); doc.text(bal.toFixed(2) + (bal<0 ? ' (Have to give)' : ' (Will get)'),500,y);
+    y+=18;
+    totalDep+=dep; totalMealsVal+=meals; totalExpense+=exp;
+    if(y>740){ doc.addPage(); y=60; }
+  }
+  y+=12;
+  doc.setFontSize(12); doc.text('Totals:',50,y); doc.text('৳'+totalDep.toFixed(2),220,y); doc.text(totalMealsVal.toString(),320,y); doc.text('৳'+totalExpense.toFixed(2),400,y);
+  doc.save('DMNR_Deposit_'+monthYear.replace(' ','_')+'.pdf');
+}
+
+function downloadMealsPDF(){
+  const now = new Date();
+  const monthYear = now.toLocaleString('default', {month:'long', year:'numeric'});
+  const doc = new jsPDF({unit:'pt', format:'a4', orientation:'landscape'});
+  doc.setFontSize(36); doc.text('DMNR', 40, 60);
+  doc.setFontSize(12); doc.text('Meal Record', 40, 84);
+  doc.line(40,92,800,92);
+  let y = 120;
+  const colWidth = 24;
+  doc.setFontSize(9);
+  doc.text('Member',40,y);
+  for(let d=1; d<=31; d++){ doc.text(String(d),120 + (d-1)*colWidth, y); }
+  doc.text('Total', 120 + 31*colWidth + 10, y);
+  y+=14;
+  for(const m of MEMBERS){
+    doc.text(m,40,y);
+    let sum=0;
+    for(let d=1; d<=31; d++){
+      const val = Number((state.mealRecord[m] && state.mealRecord[m][String(d)])||0);
+      doc.text(String(val),120 + (d-1)*colWidth, y);
+      sum += val;
+    }
+    doc.text(String(sum), 120 + 31*colWidth + 10, y);
+    y+=12;
+    if(y>540){ doc.addPage(); y=60; }
+  }
+  doc.save('DMNR_Meals_'+monthYear.replace(' ','_')+'.pdf');
+}
+
+function downloadFeesSectionPDF(){
+  const now = new Date();
+  const monthYear = now.toLocaleString('default', {month:'long', year:'numeric'});
+  const doc = new jsPDF({unit:'pt', format:'a4'});
+  doc.setFontSize(36); doc.text('DMNR', 40, 60);
+  doc.setFontSize(12); doc.text('Fees & Rent', 40, 84);
+  doc.line(40,92,555,92);
+  let y = 120;
+  doc.setFontSize(10);
+  doc.text('Fee Type',40,y);
+  let x = 140;
+  for(const m of MEMBERS){ doc.text(m, x, y); x += 60; }
+  doc.text('Row Total', x, y);
+  y += 12;
+  let grand = 0;
+  for(const ft of FEE_TYPES){
+    doc.text(ft, 40, y);
+    x = 140;
+    let rowTotal=0;
+    for(const m of MEMBERS){
+      const amt = Number((state.fees[m] && state.fees[m][ft])||0);
+      doc.text(amt.toFixed(2), x, y);
+      x += 60;
+      rowTotal += amt;
+    }
+    doc.text(rowTotal.toFixed(2), x, y);
+    grand += rowTotal;
+    y += 14;
+    if(y>740){ doc.addPage(); y=60; }
+  }
+  y+=6;
+  doc.text('Grand Total: ৳' + grand.toFixed(2), 40, y);
+  doc.save('DMNR_Fees_'+monthYear.replace(' ','_')+'.pdf');
+}
+
+function downloadExpensePDF(){
+  const now = new Date();
+  const monthYear = now.toLocaleString('default', {month:'long', year:'numeric'});
+  const doc = new jsPDF({unit:'pt', format:'a4'});
+  doc.setFontSize(36); doc.text('DMNR', 40, 60);
+  doc.setFontSize(12); doc.text('Daily Expenses', 40, 84);
+  doc.line(40,92,555,92);
+  let y = 120;
+  doc.setFontSize(10);
+  doc.text('Day', 40, y); doc.text('Item', 110, y); doc.text('Cost (৳)', 450, y);
+  y += 12;
+  let total = 0;
+  for(const e of state.expenses){
+    doc.text(String(e.day), 40, y);
+    doc.text(e.note || '-', 110, y);
+    doc.text(Number(e.cost||0).toFixed(2), 450, y);
+    total += Number(e.cost||0);
+    y += 12;
+    if(y>740){ doc.addPage(); y=60; }
+  }
+  y += 6;
+  doc.setFontSize(12); doc.text('Total Expense: ৳' + total.toFixed(2), 40, y);
+  doc.save('DMNR_Expenses_'+monthYear.replace(' ','_')+'.pdf');
+}
+
+// Stamp PDF: combined for selected members + selected fee types
+function generateCombinedStampPDF(){
+  const checkedFees = Array.from(feeCheckboxes.querySelectorAll('input[type=checkbox]:checked')).map(i=>i.value);
+  const checkedMembers = Array.from(memberCheckboxes.querySelectorAll('input[type=checkbox]:checked')).map(i=>i.value);
+  if(checkedFees.length === 0){ alert('Select at least one fee type'); return; }
+  if(checkedMembers.length === 0){ alert('Select at least one member'); return; }
+  const day = Number(stampDaySelect.value) || new Date().getDate();
+  const now = new Date();
+  const monthYear = now.toLocaleString('default', {month:'long', year:'numeric'});
+  const feeLabel = checkedFees.join('_');
+  const memberLabel = checkedMembers.join('_');
+  const filename = `DMNR_Stamp_${feeLabel}_${memberLabel}_${monthYear}.pdf`.replace(/\s+/g,'_');
+
+  const pdf = new jsPDF({ unit: 'pt', format: 'a4' });
+  pdf.setFont('helvetica');
+  // DMNR header (big, repeated 5x style using larger size)
+  pdf.setFontSize(48);
+  pdf.text('DMNR', 40, 60);
+  pdf.setFontSize(18);
+  pdf.text('DMNR DMNR DMNR DMNR', 40, 90); // visually emphasizing DMNR x5
+  pdf.setFontSize(12);
+  pdf.text('Payment Receipt (Combined)', 40, 110);
+  pdf.line(40,122,555,122);
+
+  let cursorY = 140;
+  const rowH = 20;
+  let grandTotal = 0;
+
+  for(const m of checkedMembers){
+    pdf.setFontSize(12);
+    pdf.setFont(undefined,'bold');
+    pdf.text(m, 45, cursorY);
+    cursorY += 14;
+    pdf.setFont(undefined,'normal');
+    pdf.setFontSize(10);
+    pdf.text('Fee Type', 60, cursorY);
+    pdf.text('Amount (৳)', 320, cursorY);
+    cursorY += 10;
+    let memberTotal = 0;
+    for(const ft of checkedFees){
+      const amt = Number((state.fees[m] && state.fees[m][ft])||0);
+      memberTotal += amt;
+      pdf.text(ft, 60, cursorY);
+      pdf.text(amt.toFixed(2), 320, cursorY);
+      cursorY += rowH;
+      if(cursorY > 720){ pdf.addPage(); cursorY = 60; }
+    }
+    pdf.setFont(undefined,'bold');
+    pdf.text('Member Total:', 60, cursorY);
+    pdf.text(memberTotal.toFixed(2), 320, cursorY);
+    cursorY += rowH + 6;
+    grandTotal += memberTotal;
+
+    // Draw circular PAID stamp on the right
+    const cx = 480;
+    const cy = cursorY - 40;
+    pdf.setDrawColor(220,20,60);
+    pdf.setLineWidth(3);
+    pdf.circle(cx, Math.max(140, cy), 36, 'S');
+    pdf.setFontSize(18);
+    pdf.setTextColor(220,20,60);
+    pdf.text('PAID', cx-18, Math.max(140, cy)+8);
+    pdf.setTextColor(0,0,0);
+
+    pdf.setFontSize(10);
+    pdf.setFont(undefined,'normal');
+    pdf.text('Issued on: ' + new Date(now.getFullYear(), now.getMonth(), day).toLocaleDateString(), 45, cursorY);
+    pdf.text('Signed by: Rabbi — DMNR Manager', 45, cursorY + 14);
+    cursorY += 30;
+    if(cursorY > 720){ pdf.addPage(); cursorY = 60; }
+  }
+
+  pdf.setFontSize(12);
+  pdf.setFont(undefined,'bold');
+  pdf.text('GRAND TOTAL:', 45, cursorY);
+  pdf.text('৳ ' + grandTotal.toFixed(2), 320, cursorY);
+  cursorY += 24;
+
+  pdf.save(filename);
+}
+
+// Download per fee (one PDF per selected fee, listing selected members)
+function downloadSelectedAsSeparate(){
+  const checkedFees = Array.from(feeCheckboxes.querySelectorAll('input[type=checkbox]:checked')).map(i=>i.value);
+  const checkedMembers = Array.from(memberCheckboxes.querySelectorAll('input[type=checkbox]:checked')).map(i=>i.value);
+  if(checkedFees.length === 0){ alert('Select at least one fee type'); return; }
+  if(checkedMembers.length === 0){ alert('Select at least one member'); return; }
+  const day = Number(stampDaySelect.value) || new Date().getDate();
+  const now = new Date();
+  const monthYear = now.toLocaleString('default', {month:'long', year:'numeric'});
+  if(!confirm(`Will generate ${checkedFees.length} PDF(s). Your browser will prompt save dialogs.`)) return;
+  (async ()=>{
+    for(const ft of checkedFees){
+      await new Promise(res=>{
+        setTimeout(()=>{ downloadStampPDFForFeeAndMembers(ft, checkedMembers, day, monthYear); res(); }, 300);
+      });
+    }
+  })();
+}
+
+function downloadStampPDFForFeeAndMembers(feeType, membersList, dayNumber, monthYear){
+  try {
+    const title = `DMNR_Stamp_${feeType}_${membersList.join('_')}_${monthYear}.pdf`.replace(/\s+/g,'_');
+    const pdf = new jsPDF({ unit: 'pt', format: 'a4' });
+    pdf.setFont('helvetica');
+    pdf.setFontSize(40);
+    pdf.text('DMNR', 40, 60);
+    pdf.setFontSize(12);
+    pdf.text(feeType + ' — Payment Receipt', 40, 86);
+    pdf.line(40, 92, 555, 92);
+    let y = 120;
+    pdf.setFontSize(10);
+    let total = 0;
+    for(const m of membersList){
+      const amt = Number((state.fees[m] && state.fees[m][feeType])||0);
+      pdf.text(m, 60, y);
+      pdf.text(amt.toFixed(2), 320, y);
+      y += 22;
+      total += amt;
+      if(y > 720){ pdf.addPage(); y = 60; }
+    }
+    pdf.setFont(undefined,'bold');
+    pdf.text('Total: ' + total.toFixed(2), 60, y+6);
+    pdf.setDrawColor(220,20,60);
+    pdf.setLineWidth(3);
+    pdf.circle(480, 140, 36, 'S');
+    pdf.setFontSize(18);
+    pdf.setTextColor(220,20,60);
+    pdf.text('PAID', 480-18, 148);
+    pdf.setTextColor(0,0,0);
+    pdf.text('Issued on: ' + new Date(new Date().getFullYear(), new Date().getMonth(), dayNumber).toLocaleDateString(), 45, y+26);
+    pdf.text('Signed by: Rabbi — DMNR Manager', 45, y+42);
+    pdf.save(title);
+  } catch(e){ console.error(e); alert('PDF failed: '+e); }
+}
+
+function downloadMemberPDF(member){
+  const now = new Date();
+  const monthYear = now.toLocaleString('default', {month:'long', year:'numeric'});
+  const pdf = new jsPDF({ unit: 'pt', format: 'a4' });
+  pdf.setFontSize(40); pdf.text('DMNR', 40, 60);
+  pdf.setFontSize(12); pdf.text('Member Fee Summary', 40, 86);
+  pdf.line(40,92,555,92);
+  let y = 120;
+  let total = 0;
+  for(const ft of FEE_TYPES){
+    const amt = Number((state.fees[member] && state.fees[member][ft])||0);
+    pdf.text(ft, 40, y); pdf.text(amt.toFixed(2), 300, y);
+    y += 16; total += amt;
+    if(y>740){ pdf.addPage(); y=60; }
+  }
+  pdf.setFont(undefined,'bold'); pdf.text('Total: ' + total.toFixed(2), 40, y+10);
+  pdf.save(`DMNR_${member}_Fees_${monthYear}.pdf`);
+}
+
+// Archive (snapshot current state)
+function doArchive(){
+  if(role !== 'manager'){ alert('Only manager can archive'); return; }
+  const label = prompt('Archive label (e.g., 2025-10). Leave blank for current month', new Date().toISOString().slice(0,7));
+  if(label === null) return;
+  const key = label.trim() || new Date().toISOString().slice(0,7);
+  const snapshot = JSON.parse(JSON.stringify(state));
+  state.archive[key] = { timestamp: Date.now(), snapshot };
+  const preserved = state.archive; state = defaultState(); state.archive = preserved; saveState(); renderAll(); alert('Archived as '+key);
+}
+
+function ensureShape(){
+  if(!state) state = defaultState();
+  if(!state.deposits) state.deposits = Object.fromEntries(MEMBERS.map(m=>[m,2000]));
+  if(!state.mealRecord) { state.mealRecord = {}; for(const m of MEMBERS) state.mealRecord[m] = Object.fromEntries(Array.from({length:31},(_,i)=>[String(i+1),0])); }
+  if(!state.fees) { state.fees = {}; for(const m of MEMBERS) state.fees[m] = Object.fromEntries(FEE_TYPES.map(ft=>[ft,0])); }
+  if(!state.expenses || state.expenses.length < 31) state.expenses = Array.from({length:31},(_,i)=>({day:i+1,note:'',cost:0}));
+  if(!state.payments){ state.payments = {}; for(const m of MEMBERS){ state.payments[m] = {}; for(const ft of FEE_TYPES) state.payments[m][ft] = {paid:false,date:null}; } }
+  if(!state.archive) state.archive = {};
+  if(!state.passwords) state.passwords = { manager:'manager123', member:'dmnr' };
+}
+
+function renderAll(){
+  ensureShape();
+  renderSummary();
+  renderDeposit();
+  renderMealTable();
+  renderFees();
+  renderExpenses();
+  renderFeeCheckboxes();
+  renderMemberCheckboxes();
+  populateFeesMemberSelect();
+  populateStampDaySelect();
+  saveState();
+}
+
+renderAll();
+</script>
+</body>
+</html>
